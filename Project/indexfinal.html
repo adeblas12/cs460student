@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Albert's Algorithm Visualizer</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background-color: black;
+        }
+
+        #visualizer {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            display: none;
+        }
+
+        #titleScreen {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background-color: black;
+            overflow: hidden;
+        }
+
+        #textContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #titleText {
+            color: white;
+            font-size: 3em;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+        }
+
+        #algorithmSelection, #dataInput {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 1.2em;
+            color: black;
+            background-color: white;
+            border: 1px solid green;
+            border-radius: 5px;
+            position: relative;
+            z-index: 2;
+        }
+
+        #titleScreen button, #backButton {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: green;
+            color: black;
+            border: none;
+            border-radius: 5px;
+            position: relative;
+            z-index: 2;
+        }
+        #controls {
+    text-align: center;
+    margin-top: 20px;
+}
+
+#controls label, #controls input, #controls button {
+    margin: 5px;
+}
+
+        .fallingText, .risingText {
+            position: absolute;
+            font-size: 2em;
+            color: green;
+        }
+
+        .fallingText {
+            top: -100px;
+            animation: fall 10s linear infinite;
+        }
+
+        .risingText {
+            bottom: -100px;
+            animation: rise 10s linear infinite;
+        }
+
+        @keyframes fall {
+            0% { top: -100px; }
+            100% { top: 110%; }
+        }
+
+        @keyframes rise {
+            0% { bottom: -100px; }
+            100% { bottom: 110%; }
+        }
+
+        #visualizationContainer {
+    width: 60%;
+    max-width: 800px;
+    height: 300px; /* Adjusted height */
+    background-color: black;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    margin: 0 auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.bar {
+    width: 30px;
+    
+    background-color: blue;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    position: relative;
+    margin: 0 5px; 
+}
+    </style>
+   
+</head>
+<body>
+    <div id="titleScreen">
+        <div id="textContainer"></div>
+        <div id="titleText">Welcome to Albert's Algorithm Visualizer</div>
+        <select id="algorithmSelection">
+            <option value="">Select an Algorithm</option>
+            <option value="bubbleSort">Bubble Sort</option>
+            <option value="quickSort">Quick Sort</option>
+            <option value="mergeSort">Merge Sort</option>
+            <option value="insertionSort">Insertion Sort</option>
+        </select>
+        <input type="text" id="dataInput" placeholder="Enter numbers separated by commas" />
+        <button onclick="startVisualizer()">Enter</button>
+    </div>
+    <div id="visualizer">
+        <div id="visualizationContainer"></div>
+        <button id="backButton" onclick="returnToTitleScreen()" style="display: none;">Back to Title Screen</button>
+    </div>
+
+    <div id="controls">
+        <label for="speedRange">Animation Speed:</label>
+        <input type="range" id="speedRange" min="100" max="2000" value="500">
+        <button id="pauseResume">Pause</button>
+        <button id="prevStep">Previous Step</button>
+        <button id="nextStep">Next Step</button>
+    </div>
+    <script>
+        function generateFallingText() {
+            const numberOfElements = 200;
+            for (let i = 0; i < numberOfElements; i++) {
+                let textElement = document.createElement('div');
+                if (Math.random() > 0.5) {
+                    textElement.classList.add('fallingText');
+                    textElement.style.top = `${Math.random() * 100}%`;
+                } else {
+                    textElement.classList.add('risingText');
+                    textElement.style.bottom = `${Math.random() * 100}%`;
+                }
+                textElement.textContent = Math.random() > 0.5 ? '1' : '0';
+                textElement.style.left = `${Math.random() * 100}%`;
+                textElement.style.animationDelay = `${Math.random() * 10}s`;
+                document.getElementById('textContainer').appendChild(textElement);
+            }
+        }
+
+        generateFallingText();
+        let barElements = [];
+        function startVisualizer() {
+            var selectedAlgorithm = document.getElementById('algorithmSelection').value;
+            var inputData = document.getElementById('dataInput').value.split(',').map(Number);
+            if (!selectedAlgorithm || inputData.some(isNaN)) {
+                alert('Please select an algorithm and enter valid numbers.');
+                return;
+            }
+            document.getElementById('titleScreen').style.display = 'none';
+            document.getElementById('visualizer').style.display = 'block';
+            document.getElementById('backButton').style.display = 'block';
+            var steps = [];
+    if (selectedAlgorithm === "bubbleSort") {
+        steps = bubbleSortSteps([...inputData]);
+    } else if (selectedAlgorithm === "quickSort") {
+        steps = quickSortSteps([...inputData]);
+    } else if (selectedAlgorithm === "mergeSort") {
+        steps = mergeSortSteps([...inputData]);
+    } else if (selectedAlgorithm === "insertionSort") {
+        steps = insertionSortSteps([...inputData]);
+    }
+
+    barElements = createBars(inputData);
+    animateSorting(steps);
+}
+
+        function returnToTitleScreen() {
+            document.getElementById('visualizer').style.display = 'none';
+            document.getElementById('titleScreen').style.display = 'flex';
+            document.getElementById('backButton').style.display = 'none';
+        }
+
+        function createBars(arr) {
+    const container = document.getElementById('visualizationContainer');
+    container.innerHTML = '';
+    const maxValue = Math.max(...arr);
+    const maxBarHeight = container.clientHeight; // Maximum height of the container
+    const heightLimitFactor = 0.7; // Maximum height limit factor (70% of container height)
+
+    return arr.map(value => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+
+        // Calculate the height of the bar with the limit
+        const barHeight = (value / maxValue) * maxBarHeight * heightLimitFactor;
+        bar.style.height = `${barHeight}px`; // Set height in pixels
+
+        bar.style.backgroundColor = getRandomColor();
+
+        const label = document.createElement('div');
+        label.innerText = value;
+        label.style.color = 'white';
+        label.style.position = 'absolute';
+        label.style.bottom = '0';
+        label.style.width = '100%';
+        label.style.textAlign = 'center';
+
+        bar.appendChild(label);
+        container.appendChild(bar);
+        return bar;
+    });
+}
+
+
+function animateSorting(sortingSteps) {
+    steps = sortingSteps;
+    currentStep = 0;
+    runAnimation();
+}
+
+// Global variables
+let isPaused = false;
+let currentStep = 0;
+let steps = [];
+let interval;
+
+// Update the runAnimation function
+function runAnimation() {
+    clearInterval(interval);
+    interval = setInterval(() => {
+        if (currentStep >= steps.length || isPaused) {
+            clearInterval(interval);
+            return;
+        }
+        updateBars(steps[currentStep]);
+        currentStep++;
+    }, animationSpeed);
+}
+
+// Pause and Resume functionality
+document.getElementById('pauseResume').addEventListener('click', function() {
+    isPaused = !isPaused;
+    if (isPaused) {
+        this.textContent = 'Resume';
+        clearInterval(interval); // Pause the animation
+    } else {
+        this.textContent = 'Pause';
+        runAnimation(); // Resume the animation
+    }
+});
+
+// Previous Step functionality
+document.getElementById('prevStep').addEventListener('click', function() {
+    if (currentStep > 0) {
+        currentStep--;
+        updateBars(steps[currentStep]);
+    }
+});
+
+// Next Step functionality
+document.getElementById('nextStep').addEventListener('click', function() {
+    if (currentStep < steps.length - 1) {
+        currentStep++;
+        updateBars(steps[currentStep]);
+    }
+});
+
+
+        function animateSorting(steps) {
+            let currentStep = 0;
+            const interval = setInterval(() => {
+                if (currentStep >= steps.length) {
+                    clearInterval(interval);
+                    return;
+                }
+                updateBars(steps[currentStep]);
+                currentStep++;
+            }, 500);
+        }
+
+        function updateBars(newValues) {
+    const maxValue = Math.max(...newValues);
+    const maxBarHeight = document.getElementById('visualizationContainer').clientHeight;
+    const heightLimitFactor = 0.7; // Same as in createBars
+
+    newValues.forEach((value, index) => {
+        const bar = barElements[index];
+        const barHeight = (value / maxValue) * maxBarHeight * heightLimitFactor;
+        bar.style.height = `${barHeight}px`; // Apply the scaled height
+
+        const label = bar.querySelector('div');
+        label.innerText = value;
+    });
+}
+
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        function bubbleSortSteps(arr) {
+            let steps = [];
+            let len = arr.length;
+            for (let i = 0; i < len; i++) {
+                for (let j = 0; j < len - i - 1; j++) {
+                    if (arr[j] > arr[j + 1]) {
+                        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                        steps.push(arr.slice());
+                    }
+                }
+            }
+            return steps;
+        }
+        function quickSortSteps(arr, start = 0, end = arr.length - 1, steps = []) {
+    if (start >= end) {
+        return steps;
+    }
+
+    let index = partition(arr, start, end, steps);
+    quickSortSteps(arr, start, index - 1, steps);
+    quickSortSteps(arr, index + 1, end, steps);
+
+    return steps;
+}
+
+function partition(arr, start, end, steps) {
+    let pivotIndex = start;
+    let pivotValue = arr[end];
+    for (let i = start; i < end; i++) {
+        if (arr[i] < pivotValue) {
+            [arr[i], arr[pivotIndex]] = [arr[pivotIndex], arr[i]];
+            steps.push(arr.slice()); 
+            pivotIndex++;
+        }
+    }
+    [arr[pivotIndex], arr[end]] = [arr[end], arr[pivotIndex]];
+    steps.push(arr.slice()); 
+    return pivotIndex;
+}
+
+function mergeSortSteps(arr, start = 0, end = arr.length - 1, steps = []) {
+    if (start < end) {
+        const middle = Math.floor((start + end) / 2);
+        mergeSortSteps(arr, start, middle, steps); 
+        mergeSortSteps(arr, middle + 1, end, steps); 
+        merge(arr, start, middle, end, steps); 
+    }
+    return steps;
+}
+
+function merge(arr, start, middle, end, steps) {
+    let start2 = middle + 1;
+
+    if (arr[middle] <= arr[start2]) {
+        return; 
+    }
+
+    while (start <= middle && start2 <= end) {
+        if (arr[start] <= arr[start2]) {
+            start++;
+        } else {
+            const value = arr[start2];
+            let index = start2;
+
+            while (index !== start) {
+                arr[index] = arr[index - 1];
+                index--;
+            }
+            arr[start] = value;
+
+       
+            steps.push(arr.slice());
+
+            start++;
+            middle++;
+            start2++;
+        }
+    }
+}
+
+function insertionSortSteps(arr) {
+    let steps = [];
+    for (let i = 1; i < arr.length; i++) {
+        let key = arr[i];
+        let j = i - 1;
+
+        while (j >= 0 && arr[j] > key) {
+            arr[j + 1] = arr[j];
+            j--;
+            steps.push(arr.slice()); 
+        }
+        arr[j + 1] = key;
+        steps.push(arr.slice()); 
+    }
+    return steps;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('speedRange').addEventListener('input', function() {
+        animationSpeed = this.value;
+        runAnimation(); 
+    });
+
+    document.getElementById('prevStep').addEventListener('click', function() {
+        currentStep = Math.max(0, currentStep - 1);
+        updateBars(steps[currentStep]);
+    });
+
+    document.getElementById('nextStep').addEventListener('click', function() {
+        currentStep = Math.min(steps.length - 1, currentStep + 1);
+        updateBars(steps[currentStep]);
+    });
+});
+
+    </script>
+</body>
+</html>
